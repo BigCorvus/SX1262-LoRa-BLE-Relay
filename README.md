@@ -1,6 +1,8 @@
 # SX1262-LoRa-BLE-Relay
 ![LoraBLERelay22](https://github.com/BigCorvus/SX1262-LoRa-BLE-Relay/blob/master/LORA-BLE-RelayBrd22dbm.png)
 ![LoraBLERelay30](https://github.com/BigCorvus/SX1262-LoRa-BLE-Relay/blob/master/LORA-BLE-RelayBrd30dbm.png)
+![LoraRelayTop](https://github.com/BigCorvus/SX1262-LoRa-BLE-Relay/blob/master/LoraRelaysTop.jpg)
+![LoraRelayBot](https://github.com/BigCorvus/SX1262-LoRa-BLE-Relay/blob/master/loraRelaysBot.jpg)
 These are multipurpose dev boards for the Semtech SX1262 chipset. EBYTE or CDSNET or whatever their name is sell multiple versions of RF modules based on this new LoRa chip on Aliexpress. One of its main advantages is the low RX current draw of about 5ma, which is that of the previous versions cut in half.  
 
 This project can be used as a Relay between some BLE device and other LoRa nodes to implement a simple off-grid communicator or some day, as soon as LoRaWAN drivers for the SX1262 exist, it can connect to TTN. Probably the most interesting application: this device is planned to be used as hardware for the Meshtastic project https://github.com/meshtastic/Meshtastic-device  
