@@ -1,13 +1,13 @@
 /*********************************************************************
   This is a basic firmware for for the LORA BLE relays
-  Based on the BLE UART example by Adafruit. 
-  Tested on https://github.com/adafruit/Adafruit_nRF52_Arduino core 0.20.1 
+  Based on the BLE UART example by Adafruit.
+  Tested on https://github.com/adafruit/Adafruit_nRF52_Arduino core 0.20.1
   Demontrates basic RX TX functionality by forwarding BLE data to LORA and vice versa, so the nRF UART app can be used to have a conversation via LORA.
   Also implements all the housekeeping such as the BQ27441 fuel gauge, ST7735 LCD and buttons.
-  If using the Feather nrf52840 express bootloader the SWITCH button can be used to enter bootloader mode if pressed on startup. 
-  Note that you need to modify the variant.h and variant.cpp as described below in order to get software acces to certain pins. See the core documentation for more info on where to find those files. 
-  Also note that the PHOLD pin was separated from the rest of the circuit by cutting a trace on the PCB between the P0.05 pad on the nrf52840 module and the via next to it so the power latching circuit is not used.  
-  This will be corrected in an upcoming version of the design files. 
+  If using the Feather nrf52840 express bootloader the SWITCH button can be used to enter bootloader mode if pressed on startup. LED1 is the bootloader LED
+  Note that you need to modify the variant.h and variant.cpp as described below in order to get software acces to certain pins. See the core documentation for more info on where to find those files.
+  Also note that the PHOLD pin was separated from the rest of the circuit by cutting a trace on the PCB between the P0.05 pad on the nrf52840 module and the via next to it so the power latching circuit is not used.
+  This will be corrected in an upcoming version of the design files.
 
 *********************************************************************/
 #include <bluefruit.h>
@@ -93,6 +93,7 @@ SX1262 lora = new Module(L_SS, DIO1, -1, BUSY);
 
 // flag to indicate that a packet was received
 volatile bool receivedFlag = false;
+unsigned long bltTimeout = 0;
 
 // disable interrupt when it's not needed
 volatile bool enableInterrupt = true;
@@ -191,15 +192,17 @@ void setup()
   tft.initR(INITR_18GREENTAB);   // initialize a ST7735S chip, this worked fine for my mini display, however the colors are different
   tft.setRotation(3);
   tft.setTextWrap(false);
-  tft.fillScreen(ST77XX_WHITE);
+  tft.fillScreen(ST77XX_WHITE); //actually black
   tft.setCursor(30, 30);
-  tft.setTextColor(ST77XX_RED);
+  tft.setTextColor(ST77XX_RED); //actually white
   tft.setTextSize(1);
   tft.println("LORA BLE Relay");
   tft.setCursor(30, 40);
+  tft.print("Batt. lev.: ");
   tft.print(soc);
   tft.println("%");
-
+  delay(2000);
+  tft.fillScreen(ST77XX_WHITE); //actually black
 
   // Setup the BLE LED to be enabled on CONNECT
   // Note: This is actually the default behaviour, but provided
@@ -360,10 +363,10 @@ void loop()
     //int state = lora.transmit("Hello World!");
 
     // you can also transmit byte array up to 256 bytes long
-    
-      
-      int state = lora.transmit(BLEbuf, BLEbytes+1);
-    
+
+
+    int state = lora.transmit(BLEbuf, BLEbytes + 1);
+
 
     if (state == ERR_NONE) {
       // the packet was successfully transmitted
@@ -419,7 +422,25 @@ void loop()
       // print data of the packet
       Serial.print(F("[SX1262] Data:\t\t"));
       Serial.println(str);
+
       bleuart.print(str); //send via BLE
+      tft.fillScreen(ST77XX_WHITE); //actually black
+      digitalWrite(BLT, HIGH);
+      unsigned int soc = lipo.soc();
+      tft.setTextColor(ST77XX_RED);
+      //tft.setCursor(135, 95);
+      //tft.print(soc);
+      //tft.print("%");
+      tft.setCursor(0, 30);
+      tft.println(str);
+      //tft.setTextColor(ST77XX_RED);
+      tft.print("RSSI: ");
+      tft.print(lora.getRSSI());
+      tft.println(" dBm ");
+      tft.print("SNR: ");
+      tft.print(lora.getSNR());
+      tft.println(" dB");
+
       // print RSSI (Received Signal Strength Indicator)
       Serial.print(F("[SX1262] RSSI:\t\t"));
       Serial.print(lora.getRSSI());
@@ -455,26 +476,24 @@ void loop()
 //button callbacks
 void up_callback(void)
 {
-  digitalWrite(LED2, HIGH);
-  //lora.sleep();
+  digitalWrite(BLT, HIGH);
+  unsigned int soc = lipo.soc();
+  tft.setCursor(135, 95);
+  tft.print(soc);
+  tft.println("%");
+
 }
 
 void sw_callback(void)
 {
-  digitalWrite(LED2, LOW);
+
   digitalWrite(BLT, LOW);
 }
 
 
 void ok_callback(void)
 {
-  //digitalWrite(PHOLD, LOW);
-  digitalWrite(BLT, HIGH);
-  //digitalWrite(LED2, HIGH);
-  //unsigned int soc = lipo.soc();
-  tft.setCursor(30, 40);
-  tft.print(soc);
-  tft.println("%");
+
   prepareTX();
   Serial.print(F("[SX1262] Transmitting packet ... "));
 
@@ -483,7 +502,7 @@ void ok_callback(void)
   // NOTE: transmit() is a blocking method!
   //       See example SX126x_Transmit_Interrupt for details
   //       on non-blocking transmission method.
-  int state = lora.transmit("Hello World!");
+  int state = lora.transmit("Test");
 
   // you can also transmit byte array up to 256 bytes long
   /*
