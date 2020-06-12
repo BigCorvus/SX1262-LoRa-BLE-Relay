@@ -11,8 +11,8 @@
 
 *********************************************************************/
 #include <bluefruit.h>
-#include <Adafruit_LittleFS.h>
-#include <InternalFileSystem.h>
+//#include <Adafruit_LittleFS.h>
+//#include <InternalFileSystem.h>
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 #include <SPI.h>
@@ -22,7 +22,7 @@
 //#include "Arduino.h"
 
 // Set BATTERY_CAPACITY to the design capacity of your battery.
-const unsigned int BATTERY_CAPACITY = 700; // e.g. 850mAh battery
+const unsigned int BATTERY_CAPACITY = 1500; // 
 
 
 unsigned int soc = 0;
@@ -94,6 +94,7 @@ SX1262 lora = new Module(L_SS, DIO1, -1, BUSY);
 // flag to indicate that a packet was received
 volatile bool receivedFlag = false;
 unsigned long bltTimeout = 0;
+boolean incomingMsg=false;
 
 // disable interrupt when it's not needed
 volatile bool enableInterrupt = true;
@@ -106,14 +107,13 @@ void setup()
   //WTF, Serial and the fuel gauge has to be initialized prior to the pins....
   //delay(1000);
   Serial.begin(115200);
-  delay(5000);
+  delay(3000);
   setupBQ27441();
   soc = lipo.soc();  // Read state-of-charge (%)
 
   pinMode(LED1, OUTPUT);
   pinMode(LED2, OUTPUT);
   pinMode(BLT, OUTPUT);
-
   pinMode(L_RST, OUTPUT);
   pinMode(TXEN, OUTPUT);
   pinMode(RXEN, OUTPUT);
@@ -121,7 +121,7 @@ void setup()
   pinMode(BTN_UP, INPUT_PULLUP);
   pinMode(SWITCH, INPUT_PULLUP);
   pinMode(BTN_TO_MCU, INPUT);
-  pinMode(PHOLD, INPUT); //PHOLD not used in my setup. I even cut its trace close to the nrf module and the EN pin of the LDO is pulled up ti VHI via regular spst switch
+  //pinMode(PHOLD, INPUT); //PHOLD not used in my setup. I even cut its trace close to the nrf module and the EN pin of the LDO is pulled up ti VHI via regular spst switch
 
   digitalWrite(BLT, HIGH);
   digitalWrite(L_RST, LOW);
@@ -130,8 +130,7 @@ void setup()
   prepareRX(); //switch RXEN and TXEN
   //Wire.begin();
 
-
-  Serial.println("Bluefruit52 BLEUART Example");
+  Serial.println("LORA BLE Relay based on nRF52840 and SX1262");
   Serial.println("---------------------------\n");
 
   Serial.print(F("[SX1262] Initializing ... "));
@@ -161,7 +160,6 @@ void setup()
   {
     Serial.println(F("Selected TCXO voltage is invalid for this module!"));
   }
-
   // set the function that will be called
   // when new packet is received
   lora.setDio1Action(setFlag);
@@ -176,7 +174,6 @@ void setup()
     Serial.println(state);
     while (true);
   }
-
   // if needed, 'listen' mode can be disabled by calling
   // any of the following methods:
   //
@@ -186,7 +183,6 @@ void setup()
   // lora.receive();
   // lora.readData();
   // lora.scanChannel();
-
 
   // Use this initializer (uncomment) if you're using a 0.96" 180x60 TFT
   tft.initR(INITR_18GREENTAB);   // initialize a ST7735S chip, this worked fine for my mini display, however the colors are different
@@ -207,7 +203,7 @@ void setup()
   // Setup the BLE LED to be enabled on CONNECT
   // Note: This is actually the default behaviour, but provided
   // here in case you want to control this LED manually via PIN 19
-  Bluefruit.autoConnLed(true);
+  //Bluefruit.autoConnLed(true);
 
   // Config the peripheral connection with maximum bandwidth
   // more SRAM required by SoftDevice
@@ -216,7 +212,7 @@ void setup()
 
   Bluefruit.begin();
   Bluefruit.setTxPower(4);    // Check bluefruit.h for supported values
-  Bluefruit.setName("LORA BLE Relay");
+  Bluefruit.setName("LORA BLE Relay 30dbm");
   //Bluefruit.setName(getMcuUniqueID()); // useful testing with multiple central connections
   Bluefruit.Periph.setConnectCallback(connect_callback);
   Bluefruit.Periph.setDisconnectCallback(disconnect_callback);
@@ -244,7 +240,7 @@ void setup()
   // delay(2000);
   // digitalWrite(PHOLD,LOW);
   digitalWrite(BLT, LOW);
-
+  digitalWrite(LED2, LOW);
 
   attachInterrupt(BTN_UP, up_callback, ISR_DEFERRED | FALLING);
   attachInterrupt(SWITCH, sw_callback, ISR_DEFERRED | FALLING);
@@ -327,6 +323,11 @@ void printBatteryStats()
 void loop()
 {
   //printBatteryStats();
+  //keep display backlight on for some seconds after incoming message
+  if((millis()-bltTimeout)>5000 && incomingMsg ==true){
+    digitalWrite(BLT, LOW);
+    incomingMsg=false; 
+  }
 
   // Forward data from HW Serial to BLEUART
   while (Serial.available())
@@ -363,10 +364,7 @@ void loop()
     //int state = lora.transmit("Hello World!");
 
     // you can also transmit byte array up to 256 bytes long
-
-
     int state = lora.transmit(BLEbuf, BLEbytes + 1);
-
 
     if (state == ERR_NONE) {
       // the packet was successfully transmitted
@@ -378,43 +376,33 @@ void loop()
       Serial.println(F(" bps"));
       delay(200);
       prepareRX();
-
     } else if (state == ERR_PACKET_TOO_LONG) {
       // the supplied packet was longer than 256 bytes
       Serial.println(F("too long!"));
-
     } else if (state == ERR_TX_TIMEOUT) {
       // timeout occured while transmitting packet
       Serial.println(F("timeout!"));
-
     } else {
       // some other error occurred
       Serial.print(F("failed, code "));
       Serial.println(state);
-
     }
-
   }
   // check if the flag is set
   if (receivedFlag) {
     // disable the interrupt service routine while
     // processing the data
     enableInterrupt = false;
-
     // reset flag
     receivedFlag = false;
-
     // you can read received data as an Arduino String
     String str;
     int state = lora.readData(str);
-
-
     // you can also read received data as byte array
     /*
       byte byteArr[8];
       int state = lora.readData(byteArr, 8);
     */
-
     if (state == ERR_NONE) {
       // packet was successfully received
       Serial.println(F("[SX1262] Received packet!"));
@@ -422,7 +410,6 @@ void loop()
       // print data of the packet
       Serial.print(F("[SX1262] Data:\t\t"));
       Serial.println(str);
-
       bleuart.print(str); //send via BLE
       tft.fillScreen(ST77XX_WHITE); //actually black
       digitalWrite(BLT, HIGH);
@@ -440,37 +427,33 @@ void loop()
       tft.print("SNR: ");
       tft.print(lora.getSNR());
       tft.println(" dB");
+      bltTimeout=millis();
+      incomingMsg=true;
 
       // print RSSI (Received Signal Strength Indicator)
       Serial.print(F("[SX1262] RSSI:\t\t"));
       Serial.print(lora.getRSSI());
       Serial.println(F(" dBm"));
-
       // print SNR (Signal-to-Noise Ratio)
       Serial.print(F("[SX1262] SNR:\t\t"));
       Serial.print(lora.getSNR());
       Serial.println(F(" dB"));
-
     } else if (state == ERR_CRC_MISMATCH) {
       // packet was received, but is malformed
       Serial.println(F("CRC error!"));
-
     } else {
       // some other error occurred
       Serial.print(F("failed, code "));
       Serial.println(state);
-
     }
-
     // put module back to listen mode
     lora.startReceive();
-
     // we're ready to receive more packets,
     // enable interrupt service routine
     enableInterrupt = true;
   }
 
-  delay(200);
+  delay(200); //remember: delay=sleep in the nrf52 RTOS-based core
 }
 
 //button callbacks
@@ -486,14 +469,12 @@ void up_callback(void)
 
 void sw_callback(void)
 {
-
   digitalWrite(BLT, LOW);
 }
 
 
 void ok_callback(void)
 {
-
   prepareTX();
   Serial.print(F("[SX1262] Transmitting packet ... "));
 
@@ -520,15 +501,12 @@ void ok_callback(void)
     Serial.println(F(" bps"));
     delay(200);
     prepareRX();
-
   } else if (state == ERR_PACKET_TOO_LONG) {
     // the supplied packet was longer than 256 bytes
     Serial.println(F("too long!"));
-
   } else if (state == ERR_TX_TIMEOUT) {
     // timeout occured while transmitting packet
     Serial.println(F("timeout!"));
-
   } else {
     // some other error occurred
     Serial.print(F("failed, code "));
@@ -556,7 +534,6 @@ void setFlag(void) {
   if (!enableInterrupt) {
     return;
   }
-
   // we got a packet, set the flag
   receivedFlag = true;
 }
@@ -569,7 +546,10 @@ void connect_callback(uint16_t conn_handle)
 
   char central_name[32] = { 0 };
   connection->getPeerName(central_name, sizeof(central_name));
-
+  digitalWrite(LED2, HIGH);
+  tft.setCursor(0, 95);
+  tft.print("BT");
+  
   Serial.print("Connected to ");
   Serial.println(central_name);
 }
@@ -583,7 +563,9 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason)
 {
   (void) conn_handle;
   (void) reason;
-
+  digitalWrite(LED2, LOW);
+  tft.setCursor(0, 95);
+  tft.print("  ");
   Serial.println();
   Serial.print("Disconnected, reason = 0x"); Serial.println(reason, HEX);
 }
