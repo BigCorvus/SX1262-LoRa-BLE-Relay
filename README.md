@@ -11,5 +11,5 @@ These PCBs are designed for the SPI-versions of the LORA modules only (E22-900M3
 Note that the 30dbm version of the board needs an extra 5V boost converter, which is a G5177C.  
 
 A simple Arduino test sketch demonstrates the most important functions and can be used for communication already. It will be improved in the future.  
-At the moment I'm having unresolved and seemingly unrelated issues with the smaller version. Its high current consumption, non-functioning USB serial port (bootloader is ok!) as well as I2C and GPIO issues have to be solved first. Need to assemble another board. Just stick with the 30dbm version for now. 
+At the moment I'm having unresolved and seemingly unrelated issues with the smaller version. Its high current consumption,  as well as I2C and GPIO issues have to be solved first. Need to assemble another board. Just stick with the 30dbm version for now. 
 
