@@ -12,4 +12,5 @@ Note that the 30dbm version of the board needs an extra 5V boost converter, whic
 
 A simple Arduino test sketch demonstrates the most important functions and can be used for communication already. It will be improved in the future.  
 
+Update: v1.1 of the 30dbm version is out. It has a simple slide switch and uses clickier buttons (LS12T2 from digikey). There's also a JST-SH 1mm connector for GPS modules and a high-side switch (generic SOT23 P-channel mosfet) controlled from P1.00. LED2 has been moved to P1.10 and the LEDs rearranged. The boost converter is now controlled from P0.05. 
 
