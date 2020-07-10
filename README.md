@@ -1,6 +1,6 @@
 # SX1262-LoRa-BLE-Relay
 ![LoraBLERelay22](https://github.com/BigCorvus/SX1262-LoRa-BLE-Relay/blob/master/LORA-BLE-RelayBrd22dbm.png)
-![LoraBLERelay30](https://github.com/BigCorvus/SX1262-LoRa-BLE-Relay/blob/master/LORA-BLE-RelayBrd30dbm.png)
+![LoraBLERelay30](https://github.com/BigCorvus/SX1262-LoRa-BLE-Relay/blob/master/LORA-BLE-RelayBrd30dbm_v1.1.png)
 ![LoraRelayTop](https://github.com/BigCorvus/SX1262-LoRa-BLE-Relay/blob/master/LoraRelaysTop.jpg)
 ![LoraRelayBot](https://github.com/BigCorvus/SX1262-LoRa-BLE-Relay/blob/master/loraRelaysBot.jpg)
 These are multipurpose dev boards for the Semtech SX1262 chipset. EBYTE or CDSNET or whatever their name is sell multiple versions of RF modules based on this new LoRa chip on Aliexpress. One of its main advantages is the low RX current draw of about 5ma, which is that of the previous versions cut in half.  
